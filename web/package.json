@@ -1,0 +1,30 @@
+{
+  "name": "voidabyss-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "watch": "vite build --watch",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
+    "@dotenvx/dotenvx": "^1.32.1",
+    "@linaria/core": "^6.2.0",
+    "@solidjs/router": "^0.15.2",
+    "@wyw-in-js/babel-preset": "^0.5.5",
+    "quill": "^2.0.3",
+    "solid-js": "^1.9.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@wyw-in-js/vite": "^0.5.5",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.5",
+    "vite-plugin-solid": "^2.11.0"
+  }
+}

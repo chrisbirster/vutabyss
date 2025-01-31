@@ -1,0 +1,5 @@
+vb.db
+dist/*
+.env
+.envrc
+.github/*
