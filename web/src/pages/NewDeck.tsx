@@ -1,8 +1,7 @@
-import { css } from "@linaria/core";
+import { css, cx } from "@linaria/core";
 import { createDeck } from "@/api";
-import { createDeckRequest } from "@/schema";
-import { createSignal } from "solid-js/types/server/reactive.js";
-import { onMount } from "solid-js";
+import { createSignal, onMount, onCleanup, Show, createEffect } from "solid-js";
+import { useSubmission } from "@solidjs/router";
 
 const page = css`
   display: flex;
@@ -14,6 +13,7 @@ const page = css`
   min-height: 100vh;
   width: 100%;
 `;
+
 const container = css`
   border-radius: 8px;
   background-color: #ccc;
@@ -28,6 +28,11 @@ const inputField = css`
   border-radius: 8px;
   border: 1px solid #ccc;
   font-size: 16px;
+
+  &.dirty:invalid {
+    border-color: red;
+    background-color: #ffe6e6;
+  }
 `;
 
 const buttonPrimary = css`
@@ -40,102 +45,138 @@ const buttonPrimary = css`
   border: none;
   font-size: 16px;
   cursor: pointer;
+
+  &:disabled {
+    background: #a29bfe;
+    cursor: not-allowed;
+  }
+`;
+
+const errorBanner = css`
+  color: red;
+  background-color: #ffe6e6;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid red;
+  border-radius: 4px;
+  display: none;
+`;
+
+const activeErrorBanner = css`
+  display: block;
+`;
+
+const spanError = css`
+  color: red;
 `;
 
 export default function NewDeck() {
-  const [nameError, setNameError] = createSignal("");
+  const submission = useSubmission(createDeck);
   const [generalError, setGeneralError] = createSignal("");
+  const [showGeneralError, setShowGeneralError] = createSignal(false);
+  const [isTouched, setIsTouched] = createSignal(false);
+  const [nameError, setNameError] = createSignal("");
 
-  let formRef;
-  let nameInputRef;
-  let nameErrorRef;
+  // TODO: Better way to do this? Handles the general error not being evaluated reactively 
+  createEffect(() => {
+    nameError() ? setShowGeneralError(true) : setShowGeneralError(false)
+  })
+
+  let formRef!: HTMLFormElement;
+  let nameInputRef!: HTMLInputElement;
+
+  function showError(input: HTMLInputElement) {
+    if (input.validity.valueMissing) {
+      setNameError("(*) You need to enter a deck name.");
+    } else if (input.validity.patternMismatch) {
+      setNameError("(*) Deck name must contain at least one letter.");
+    } else {
+      setNameError("(*) Invalid input.");
+    }
+  }
+
+  /**
+   * validate name field
+   */
+  const handleInput = async () => {
+    setIsTouched(true);
+    if (nameInputRef.validity.valid) {
+      setNameError("");
+    } else {
+      showError(nameInputRef);
+    }
+  };
+
+  /**
+   * Validates the form on submission. If invalid, prevents the default submit,
+   * marks the form fields as "touched" for styling, displays the specific error
+   * for the name field, and provides a general message to prompt the user to fix errors.
+   */
+  const handleSubmit = (event: SubmitEvent) => {
+    // if the form is invalid cancel submission and show errors
+    if (!formRef.checkValidity()) {
+      event.preventDefault();
+      setIsTouched(true)
+      showError(nameInputRef);
+      setGeneralError("Please fix the errors in the form before submitting.");
+    }
+  };
 
   onMount(() => {
-    const nameInput = nameInputRef;
-    const nameError = nameErrorRef;
-
-    // Handle input events for real-time validation
-    const handleInput = (event) => {
-      if (nameInput.validity.valid) {
-        nameError.textContent = ""; // Clear error message
-        nameError.classList.remove("active"); // Hide error
-      } else {
-        showError(nameInput, nameError);
-      }
-    };
-
-    nameInput.addEventListener("input", handleInput);
-
-    // Handle form submission
-    const handleSubmit = (event) => {
-      // If the name field is invalid, prevent form submission
-      if (!nameInput.validity.valid) {
-        showError(nameInput, nameError);
-        setGeneralError("Please fix the errors in the form before submitting.");
-        event.preventDefault();
-      } else {
-        // Clear any general errors
-        setGeneralError("");
-      }
-    };
-
     formRef.addEventListener("submit", handleSubmit);
-
-    // Clean up event listeners when the component unmounts
     onCleanup(() => {
-      nameInput.removeEventListener("input", handleInput);
       formRef.removeEventListener("submit", handleSubmit);
     });
   });
 
-  function showError(input, errorElement) {
-    if (input.validity.valueMissing) {
-      // If empty
-      errorElement.textContent = "You need to enter a deck name.";
-    } else if (input.validity.patternMismatch) {
-      // If it doesn't contain at least one letter
-      errorElement.textContent = "Deck name must contain at least one letter.";
-    } else {
-      // Generic error message
-      errorElement.textContent = "Invalid input.";
-    }
-    // Add the `active` class to display the error
-    errorElement.classList.add("active");
-  }
-
-  // Parse and validate 
-  const parsedData = createDeckRequest.safeParse({ name, description });
-  if (!parsedData.success) {
-    const errorMessages = parsedData.error.errors.map(err => err.message).join(" ");
-    throw new Error(errorMessages);
-  }
-
-  const onSubmit = (evt: Event) => {
-    evt.preventDefault();
-    const formData = new FormData(evt.target);
-  }
-
   return (
     <div class={page}>
       <div class={container}>
-        <form action={createDeck} method="post">
-          <label>Name of new deck</label>
+        <form ref={formRef} noValidate action={createDeck} method="post">
+          {/* Name Field */}
+          <label for="name">Name of new deck</label>
           <input
+            ref={nameInputRef}
+            class={inputField}
+            classList={{ dirty: isTouched() }}
+            id="name"
             name="name"
             type="text"
             placeholder="Enter name ..."
-            class={inputField}
+            required
+            pattern="(?=.*[A-Za-z]).+"
+            title="Deck name must contain at least one letter."
+            onInput={handleInput}
+            onBlur={() => setIsTouched(true)}
           />
+          <span class={spanError}>{nameError()}</span>
           <p>This is the name for your group of flashcards</p>
-          <label>Description (optional)</label>
+
+          {/* Description Field */}
+          <label for="description">Description (optional)</label>
           <input
+            id="description"
             name="description"
             type="text"
             placeholder="A deck for studying ..."
             class={inputField}
           />
-          <p>Provide a useful description that distinguishes this deck from othere</p>
-          <button class={buttonPrimary} type="submit">Create Deck</button>
+          <p>Provide a useful description that distinguishes this deck from others</p>
+
+          <Show when={showGeneralError()}>
+            <div class={cx(errorBanner, activeErrorBanner)}>
+              {generalError()}
+            </div>
+          </Show>
+
+          {/* Submit Button */}
+          <button
+            class={buttonPrimary}
+            type="submit"
+            disabled={submission.pending}
+          >
+            {submission.pending ? "Creating Deck..." : "Create Deck"}
+          </button>
         </form>
       </div>
     </div>

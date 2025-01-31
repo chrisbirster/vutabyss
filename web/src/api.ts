@@ -10,6 +10,7 @@ export const routes = {
   apiTemplates: "/api/templates",
   apiTemplateByID: "/api/templates/:templateID",
   apiCardsByDeck: "/api/decks/:deckID/cards",
+  appCreateNewCards: "/app/decks/:deckID/cards/new",
 }
 
 const getFetch = async (url: string) => {
@@ -89,7 +90,9 @@ export const createDeck = action(async (fd: FormData) => {
     const data = JSON.stringify({ name, description });
     const response = await postFetch(routes.apiDecks, data);
     if (response.deck_id) {
-      return redirect(`/app/decks/${response.deck_id}`);
+
+      const url = routes.appCreateNewCards.replace(":deckID", response.deck_id)
+      return redirect(url);
     } else {
       return new Error("Invalid response from server");
     }

@@ -12,7 +12,7 @@ const Signup = lazy(() => import("./pages/Signup"));
 // Decks
 const ListDecks = lazy(() => import("./pages/Decks"));
 const DeckDetails = lazy(() => import("./pages/CardsByDeck"));
-const CreateNewDeck = lazy(() => import("./pages/NewDeckForm"));
+const CreateNewDeck = lazy(() => import("./pages/NewDeck"));
 
 // Cards
 const ListCards = lazy(() => import("./pages/Cards"));
