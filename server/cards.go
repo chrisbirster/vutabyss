@@ -22,7 +22,44 @@ type GetDeckRequest struct {
 
 // CardsResponse defines the structure of the JSON response for cards
 type CardListResponse struct {
-	Cards []database.CardDetailsByDeckRow `json:"cards"`
+	Deck  CustomDeckResponse     `json:"deck"`
+	Cards []CombinedCardResponse `json:"cards"`
+}
+
+// CombinedCardResponse represents a card along with its note details.
+type CombinedCardResponse struct {
+	CardID       string    `json:"card_id"`
+	DueDate      string    `json:"due_date"`
+	Stability    float64   `json:"stability"`
+	Difficulty   float64   `json:"difficulty"`
+	Interval     int64     `json:"interval"`
+	Status       string    `json:"status"`
+	Reps         int64     `json:"reps"`
+	Lapses       int64     `json:"lapses"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	TemplateName string    `json:"template_name"`
+	FrontHtml    string    `json:"front_html"`
+	BackHtml     string    `json:"back_html"`
+	Css          string    `json:"css"`
+
+	// Note-related fields
+	NoteID          string `json:"note_id"`
+	NoteName        string `json:"note_name"`
+	NoteDescription string `json:"note_description"`
+	NoteTypeID      string `json:"note_type_id"`
+	NoteTypeName    string `json:"note_type_name"`
+	NoteFieldID     string `json:"note_field_id"`
+	FieldName       string `json:"field_name"`
+	FrontContent    string `json:"front_content"`
+	BackContent     string `json:"back_content"`
+}
+
+type CustomDeckResponse struct {
+	DeckID          string `json:"deck_id"`
+	DeckName        string `json:"deck_name"`
+	DeckDescription string `json:"deck_description"`
+	OwnerID         string `json:"owner_id"`
 }
 
 func FuncUserCardsByDeck(app *app.App) echo.HandlerFunc {
@@ -35,30 +72,82 @@ func FuncUserCardsByDeck(app *app.App) echo.HandlerFunc {
 			})
 		}
 
-		// get and validate templateID from request
+		// get and validate deckID from request
 		var req GetDeckRequest
 		err = validateRequest(c, &req)
 		if err != nil {
-			logging.SlogLogger.Error("Error validating template request", "error", err)
+			logging.SlogLogger.Error("Error validating deckID from request", "error", err)
 			return c.JSON(http.StatusBadRequest, ErrorResponse{
-				Error: "Failed to validate tamplate request",
+				Error: "Failed to validate request",
 			})
 		}
 
-		deck, err := app.Queries.GetDeckById(c.Request().Context(), req.ID)
+		rows, err := app.Queries.CardDetailsByDeck(c.Request().Context(), req.ID)
 		if err != nil {
-			logging.SlogLogger.Error("Error retrieving deck", "error", err)
+			logging.SlogLogger.Error("Error retrieving cards", "error", err, "deck", req.ID)
 			return c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error: "Failed to retrieve deck",
+				Error: "Failed to retrieve cards",
 			})
 		}
 
-		cards, err := app.Queries.CardDetailsByDeck(c.Request().Context(), deck.ID)
-		if err != nil {
-			logging.SlogLogger.Error("Error retrieving cards", "error", err, "deck", deck.ID)
-			return c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error: fmt.Sprintf("Failed to retrieve cards for deck (%s)", deck.Name),
-			})
+		if len(rows) == 0 {
+			return c.JSON(http.StatusNotFound, ErrorResponse{Error: "Deck not found or has no cards"})
+		}
+
+		var deck CustomDeckResponse
+		cardMap := make(map[string]CombinedCardResponse)
+
+		// Iterate over each row.
+		for _, row := range rows {
+			// Use the first row to set the deck (they all should be the same).
+			if deck.DeckID == "" {
+				deck = CustomDeckResponse{
+					DeckID:          row.DeckID,
+					DeckName:        row.DeckName,
+					DeckDescription: convertNullString(row.DeckDescription),
+					OwnerID:         row.OwnerID,
+				}
+			}
+
+			card, exists := cardMap[row.CardID]
+			if !exists {
+				// Append card details.
+				card = CombinedCardResponse{
+					DueDate:         convertNullTime(row.DueDate),
+					CardID:          row.CardID,
+					Stability:       convertNullFloat64(row.Stability),
+					Difficulty:      convertNullFloat64(row.Difficulty),
+					Interval:        convertNullInt64(row.Interval),
+					Status:          convertNullString(row.Status),
+					Reps:            convertNullInt64(row.Reps),
+					Lapses:          convertNullInt64(row.Lapses),
+					CreatedAt:       row.CreatedAt,
+					UpdatedAt:       row.UpdatedAt,
+					TemplateName:    row.TemplateName,
+					FrontHtml:       row.FrontHtml,
+					BackHtml:        row.BackHtml,
+					Css:             convertNullString(row.Css),
+					NoteID:          row.NoteID,
+					NoteName:        row.NoteName,
+					NoteDescription: convertNullString(row.NoteDescription),
+					NoteTypeID:      row.NoteTypeID,
+					NoteTypeName:    row.NoteTypeName,
+					NoteFieldID:     convertNullString(row.NoteFieldID),
+					FrontContent:    "",
+					BackContent:     "",
+				}
+
+				fieldName := convertNullString(row.FieldName)
+				fieldContent := convertNullString(row.FieldContent)
+				if fieldName == "Front" {
+					card.FrontContent = fieldContent
+				} else if fieldName == "Back" {
+					card.BackContent = fieldContent
+				}
+
+				// Update the map.
+				cardMap[row.CardID] = card
+			}
 		}
 
 		// verify ownership
@@ -69,7 +158,16 @@ func FuncUserCardsByDeck(app *app.App) echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, CardListResponse{Cards: cards})
+		var cards []CombinedCardResponse
+		for _, card := range cardMap {
+			cards = append(cards, card)
+		}
+
+		resp := CardListResponse{
+			Deck:  deck,
+			Cards: cards,
+		}
+		return c.JSON(http.StatusOK, resp)
 	}
 }
 

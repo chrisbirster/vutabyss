@@ -209,7 +209,7 @@ func FuncSignUp(app *app.App) echo.HandlerFunc {
 		}
 
 		displayName := convertNullString(user.DisplayName)
-		err = OnboardNewUser(c.Request().Context(), qtx, user.ID, displayName.(string))
+		err = OnboardNewUser(c.Request().Context(), qtx, user.ID, displayName)
 		if err != nil {
 			log.Printf("Error onboarding user: %v", err)
 			return c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error onboarding new user"})

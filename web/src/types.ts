@@ -1,3 +1,5 @@
+import { JSX } from "solid-js";
+
 /**
  * Represents an AuthProvider record.
  */
@@ -48,13 +50,9 @@ export interface CardTemplate {
  */
 export interface Deck {
   id: number;
-  did: string;
-  name: string;
-  owner_id: number;
-  description: string | null;
+  deck_name: string;
+  deck_description: string | null;
   card_count: number;
-  created_at: string;
-  updated_at: string;
 }
 
 /**
@@ -249,36 +247,52 @@ export type NullableDateTime = {
   Valid: boolean;
 };
 
-export type CardDetails = {
-  note_id: number;
-  deck_id: number;
-  note_type_id: number;
-  note_type_name: string;
-  note_field_id: NullableInt64;
-  field_name: NullableString;
-  field_content: NullableString;
-  deck_name: string;
-  deck_description: NullableString;
-  due_date: NullableDateTime;
-  template_name: string;
-  front_html: string;
-  back_html: string;
-};
-
 export type DeckType = "Owned" | "Shared" | "All";
 
-export type CombinedCard = {
+export interface CardDetails {
   card_id: string;
-  note_id: string;
-  note_type_id: string;
-  note_type_name: string;
-  deck_id: string;
-  deck_name: string;
-  deck_description: string;
-  due_date?: string;
+  due_date: string;
+  stability: number;
+  difficulty: number;
+  interval: number;
+  status: string;
+  reps: number;
+  lapses: number;
+  created_at: string;
+  updated_at: string;
   template_name: string;
   front_html: string;
   back_html: string;
+  css: string;
+  // Note details
+  note_id: string;
+  note_name: string;
+  note_description: string;
+  note_type_id: string;
+  note_type_name: string;
+  note_field_id: string;
   front_content: string;
   back_content: string;
+}
+
+export type FieldType = {
+  id: string;
+  logo: (props: any) => JSX.Element;
+  label: string;
 };
+
+/** 
+ * Each field has:
+ * - a unique ID
+ * - a name (shown in the text input)
+ * - whether the gear menu is open or not
+ */
+export type TField = {
+  id: number;
+  name: string;
+  type: FieldType;
+  gearMenuOpen?: boolean;
+};
+
+
+

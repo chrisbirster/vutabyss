@@ -138,3 +138,8 @@ export const getTemplateByID = async (templateID: string) => {
     throw new Error(`Error fetching resources: ${err}`);
   }
 }
+
+export const createTemplate = action(async (fd: FormData) => {
+  // TODO: get generated template from submission
+  console.log(fd.entries());
+});

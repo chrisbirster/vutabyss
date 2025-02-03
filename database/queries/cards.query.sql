@@ -42,6 +42,8 @@ WHERE id = ?;
 -- name: CardDetailsByDeck :many
 SELECT
     n.id AS note_id,
+    nt.name       as note_name,
+    nt.description as note_description,
     nt.id AS note_type_id,
     nt.name AS note_type_name,
     nf.id AS note_field_id,
@@ -50,11 +52,21 @@ SELECT
     d.id AS deck_id,
     d.name AS deck_name,
     d.description AS deck_description,
+    d.owner_id,
     c.due_date,
     c.id AS card_id,
+    c.stability,
+    c.difficulty,
+    c.interval,
+    c.status,
+    c.reps,
+    c.lapses,
+    c.created_at,
+    c.updated_at,
     ct.template_name,
     ct.front_html,
-    ct.back_html
+    ct.back_html,
+    ct.css
 FROM
     note n
 JOIN
@@ -70,3 +82,20 @@ LEFT JOIN
 WHERE
     d.id = ?
 ORDER BY c.created_at;
+
+-- name: ListCardsByDeck :many
+SELECT c.id,
+       c.note_id,
+       c.card_template_id,
+       c.due_date,
+       c.stability,
+       c.difficulty,
+       c.interval,
+       c.status,
+       c.reps,
+       c.lapses,
+       c.created_at,
+       c.updated_at
+FROM card AS c
+JOIN note AS n ON c.note_id = n.id
+WHERE n.deck_id = ?;

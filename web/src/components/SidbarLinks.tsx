@@ -2,11 +2,11 @@ import { css, cx } from "@linaria/core";
 import { A } from "@solidjs/router";
 import { Accessor, For, JSX, Show } from "solid-js";
 import {
-  CardLogo,
-  DeckLogo,
-  LibraryLogo,
-  TemplateLogo,
-} from "@/components/Logos";
+  LayoutDashboard,
+  BookText,
+  SquareLibrary,
+  BookDashed,
+} from "lucide-solid";
 
 const navItem = css`
   display: flex;
@@ -68,22 +68,22 @@ type SidebarItem = {
 export const SidebarLinks = (props: { isCollapsed: Accessor<boolean> }) => {
   const sidebarItems: SidebarItem[] = [
     {
-      logo: <LibraryLogo />,
+      logo: <LayoutDashboard />,
       label: "Home",
       to: "/app/library",
     },
     {
-      logo: <CardLogo />,
+      logo: <BookText />,
       label: "Cards",
       to: "/app/cards",
     },
     {
-      logo: <DeckLogo />,
+      logo: <SquareLibrary />,
       label: "Decks",
       to: "/app/decks",
     },
     {
-      logo: <TemplateLogo />,
+      logo: <BookDashed />,
       label: "Templates",
       to: "/app/templates",
     },
@@ -103,7 +103,7 @@ export const SidebarLinks = (props: { isCollapsed: Accessor<boolean> }) => {
       </For >
       <div class={sectionHeader}>Your Favorites</div>
       <A class={navItem} activeClass={activeNavItem} href="/decks">
-        <span class={logoContainer}><DeckLogo /></span>
+        <span class={logoContainer}><SquareLibrary /></span>
         <Show when={!props.isCollapsed()}>
           <span>Decks</span>
         </Show>

@@ -68,6 +68,7 @@ export const Routes = () => {
         <Route path="/templates/:templateID" component={CardTemplateDetails} />
         <Route path="/templates/:templateID/edit" component={EditCardTemplate} />
         <Route path="/templates/new" component={CreateNewCardTemplate} />
+        {/* <Route path="/templates/new" component={Task} /> */}
 
         {/* --- Authenticated [Note] routes --- */}
         <Route path="/notes" component={ListCards} />

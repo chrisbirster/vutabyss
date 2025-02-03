@@ -1,5 +1,5 @@
 import { css } from "@linaria/core";
-import { CardDetails } from "@/types";
+import { CardDetails, Deck } from "@/types";
 import { useParams } from "@solidjs/router";
 import { createResource, createSignal } from "solid-js";
 import { getCardsByDeck } from "@/api";
@@ -14,11 +14,10 @@ const container = css`
   min-height: 100vh;
   overflow-x: hidden;
   width: 100%;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-  
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
+    display: none;
   }
 `;
 
@@ -32,6 +31,7 @@ const layout = css`
 `;
 
 type ResourceData = {
+  deck: Deck;
   cards: CardDetails[];
 };
 
@@ -41,29 +41,30 @@ export default function CardsByDeck() {
   const [selectedCardId, setSelectedCardId] = createSignal<number | null>(null);
   const [search, _] = createSignal("");
 
-  const handleSelectedCardId = (note_id: number) => setSelectedCardId(note_id)
-  const selectedCard = () => data()?.cards.find(card => card.note_id === selectedCardId());
+  // Use card_id (or note_id if you prefer) as the key for selection.
+  const handleSelectedCardId = (cardId: string) => setSelectedCardId(cardId);
+  const selectedCard = () => data()?.cards.find(card => card.card_id === selectedCardId());
+
 
   if (data.error) {
     return <p>{JSON.stringify(data.error)}</p>
   }
 
+
   return (
     <div class={container}>
       <NoteCardListHeader
-        name={data()?.cards[0].deck_name}
-        description={data()?.cards[0].deck_description.String}
+        name={data()?.deck.deck_name}
+        description={data()?.deck.deck_description}
       />
       <div class={layout}>
+        {/* Left column: List of cards */}
         <NoteCardList
-          selectedCard={selectedCard()}
+          cards={data()?.cards || []}
           onSelectedCard={handleSelectedCardId}
-          cards={
-            data()?.cards.filter(card =>
-              card.field_content.String.toLowerCase().includes(search().toLowerCase())
-            )
-          }
+          selectedCard={selectedCard()}
         />
+        {/* Right column: Detailed view */}
         <NoteCardTabView card={selectedCard()} />
       </div>
     </div>

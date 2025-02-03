@@ -4,7 +4,7 @@ import { DashboardSearch } from "@/components/DashboardSearch";
 import { createSignal } from "solid-js";
 import { FilterMenu } from "@/components/FilterMenu";
 import { DeckContent } from "@/components/DeckContent";
-import { GridLogo, TableLogo } from "@/components/Logos";
+import { Grid2x2, TableProperties } from "lucide-solid";
 import { A } from "@solidjs/router";
 
 const container = css`
@@ -101,13 +101,13 @@ export default function Decks() {
               class={`${toggleButton} ${view() === "card" ? "active" : ""}`}
               onClick={() => setView("card")}
             >
-              <GridLogo />
+              <Grid2x2 />
             </span>
             <span
               class={`${toggleButton} ${view() === "table" ? "active" : ""}`}
               onClick={() => setView("table")}
             >
-              <TableLogo />
+              <TableProperties />
             </span>
           </div>
         </div>

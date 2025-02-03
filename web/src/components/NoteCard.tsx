@@ -28,31 +28,41 @@ const card = css`
   }
 `;
 
-const selected = css`
+const selectedStyle = css`
   background: #f0f0f0;
   border-left: 8px solid #2c2c54;
 `;
 
 const content = css`
   word-wrap: break-word;
+  margin-top: 8px;
+`;
+
+const header = css`
+  display: flex;
+  justify-content: flex-end;
 `;
 
 type NoteCardProps = {
-  note: CardDetails,
+  card: CardDetails,
   selectedCard: boolean,
-  onSelectCard: (note_id: number) => void,
+  onSelectCard: (card_id: string) => void,
 }
 export const NoteCard = (props: NoteCardProps) => {
   return (
     <div
-      class={cx(card, props.selectedCard && selected)}
-      onClick={() => props.onSelectCard(props.note.note_id)}
+      class={cx(card, props.selectedCard && selectedStyle)}
+      onClick={() => props.onSelectCard(props.card.card_id)}
     >
-      <strong>{props.note.field_name.String}</strong>
-      <p class={content}>{props.note.field_content.String}</p>
-      <span class={tag}>{props.note.note_type_name}</span>
+      {/* Header: shows card type on the top right */}
+      <div class={header}>
+        <span class={tag}>{props.card.template_name}</span>
+      </div>
+      {/* Content: show front content then back content */}
+      <div class={content}>
+        <p>{props.card.front_content}</p>
+        <p>{props.card.back_content}</p>
+      </div>
     </div>
-
   );
-}
-
+};

@@ -1,7 +1,7 @@
 import { css, cx } from "@linaria/core";
 import { DeckType } from "@/types";
 import { Accessor, createSignal, onCleanup, Setter, Show } from "solid-js";
-import { ChevronLogo } from "@/components/Logos";
+import { ArrowUpDown } from "lucide-solid";
 
 const tab = css`
   display: flex;
@@ -104,7 +104,7 @@ export const FilterMenu = (props: FilterMenuProps) => {
         {props.activeTab()}
       </span>
       <span>
-        <span class={cx(isOpen() && rotate)}><ChevronLogo /></span>
+        <span class={cx(isOpen() && rotate)}><ArrowUpDown /></span>
       </span>
       <Show when={isOpen()}>
         <ul class={dropdownMenu} role="menu">

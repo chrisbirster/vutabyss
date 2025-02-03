@@ -21,7 +21,6 @@ type AuthContextType = {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export type User = { user_id: number, email: string };
 export type Status = "authenticated" | "unauthenticated" | "loading"
 const MINUTE = 1000 * 60;
@@ -31,6 +30,7 @@ export const AuthProvider = (props: ParentProps) => {
   const [user, setUser] = createSignal<User | null>(null);
   const [status, setStatus] = createSignal<Status>("loading");
   const [loading, setLoading] = createSignal(true);
+
   let intervalId: NodeJS.Timeout;
 
   const fetchUser = async () => {

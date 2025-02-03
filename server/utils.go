@@ -60,32 +60,32 @@ func requireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func convertNullString(ns sql.NullString) interface{} {
+func convertNullString(ns sql.NullString) string {
 	if ns.Valid {
 		return ns.String
 	}
-	return nil
+	return ""
 }
 
-func convertNullInt64(ni sql.NullInt64) interface{} {
+func convertNullInt64(ni sql.NullInt64) int64 {
 	if ni.Valid {
 		return ni.Int64
 	}
-	return nil
+	return 0
 }
 
-func convertNullFloat64(nf sql.NullFloat64) interface{} {
+func convertNullFloat64(nf sql.NullFloat64) float64 {
 	if nf.Valid {
 		return nf.Float64
 	}
-	return nil
+	return 0.0
 }
 
-func convertNullTime(nt sql.NullTime) interface{} {
+func convertNullTime(nt sql.NullTime) string {
 	if nt.Valid {
 		return nt.Time.Format(time.RFC3339)
 	}
-	return nil
+	return ""
 }
 
 // findAllPlaceholderNumbers e.g. parse "The capital of {{c1::France::country}} is in Europe. The currency is {{c2::Euro}}."
@@ -124,6 +124,7 @@ func getUserFromContext(c echo.Context) (database.User, error) {
 	}
 	return user, nil
 }
+
 func validateRequest(c echo.Context, req interface{}) error {
 	if err := c.Bind(req); err != nil {
 		logging.SlogLogger.Error("Invalid Request Received", "error", err)

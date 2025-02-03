@@ -1,5 +1,5 @@
 import { css } from "@linaria/core";
-import { SearchLogo } from "./Logos";
+import { Search } from "lucide-solid";
 import { createSignal, onCleanup, Show } from "solid-js";
 
 const searchBar = css`
@@ -77,7 +77,7 @@ export const DashboardSearch = () => {
   return (
     <div class={searchBar}>
       <div class={searchContent}>
-        <span class={logo}><SearchLogo /></span>
+        <span class={logo}><Search /></span>
         <input
           ref={inputRef}
           class={searchInput}

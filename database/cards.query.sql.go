@@ -8,11 +8,14 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const cardDetailsByDeck = `-- name: CardDetailsByDeck :many
 SELECT
     n.id AS note_id,
+    nt.name       as note_name,
+    nt.description as note_description,
     nt.id AS note_type_id,
     nt.name AS note_type_name,
     nf.id AS note_field_id,
@@ -21,11 +24,21 @@ SELECT
     d.id AS deck_id,
     d.name AS deck_name,
     d.description AS deck_description,
+    d.owner_id,
     c.due_date,
     c.id AS card_id,
+    c.stability,
+    c.difficulty,
+    c.interval,
+    c.status,
+    c.reps,
+    c.lapses,
+    c.created_at,
+    c.updated_at,
     ct.template_name,
     ct.front_html,
-    ct.back_html
+    ct.back_html,
+    ct.css
 FROM
     note n
 JOIN
@@ -44,20 +57,32 @@ ORDER BY c.created_at
 `
 
 type CardDetailsByDeckRow struct {
-	NoteID          string         `json:"note_id"`
-	NoteTypeID      string         `json:"note_type_id"`
-	NoteTypeName    string         `json:"note_type_name"`
-	NoteFieldID     sql.NullString `json:"note_field_id"`
-	FieldName       sql.NullString `json:"field_name"`
-	FieldContent    sql.NullString `json:"field_content"`
-	DeckID          string         `json:"deck_id"`
-	DeckName        string         `json:"deck_name"`
-	DeckDescription sql.NullString `json:"deck_description"`
-	DueDate         sql.NullTime   `json:"due_date"`
-	CardID          string         `json:"card_id"`
-	TemplateName    string         `json:"template_name"`
-	FrontHtml       string         `json:"front_html"`
-	BackHtml        string         `json:"back_html"`
+	NoteID          string          `json:"note_id"`
+	NoteName        string          `json:"note_name"`
+	NoteDescription sql.NullString  `json:"note_description"`
+	NoteTypeID      string          `json:"note_type_id"`
+	NoteTypeName    string          `json:"note_type_name"`
+	NoteFieldID     sql.NullString  `json:"note_field_id"`
+	FieldName       sql.NullString  `json:"field_name"`
+	FieldContent    sql.NullString  `json:"field_content"`
+	DeckID          string          `json:"deck_id"`
+	DeckName        string          `json:"deck_name"`
+	DeckDescription sql.NullString  `json:"deck_description"`
+	OwnerID         string          `json:"owner_id"`
+	DueDate         sql.NullTime    `json:"due_date"`
+	CardID          string          `json:"card_id"`
+	Stability       sql.NullFloat64 `json:"stability"`
+	Difficulty      sql.NullFloat64 `json:"difficulty"`
+	Interval        sql.NullInt64   `json:"interval"`
+	Status          sql.NullString  `json:"status"`
+	Reps            sql.NullInt64   `json:"reps"`
+	Lapses          sql.NullInt64   `json:"lapses"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
+	TemplateName    string          `json:"template_name"`
+	FrontHtml       string          `json:"front_html"`
+	BackHtml        string          `json:"back_html"`
+	Css             sql.NullString  `json:"css"`
 }
 
 func (q *Queries) CardDetailsByDeck(ctx context.Context, id string) ([]CardDetailsByDeckRow, error) {
@@ -71,6 +96,8 @@ func (q *Queries) CardDetailsByDeck(ctx context.Context, id string) ([]CardDetai
 		var i CardDetailsByDeckRow
 		if err := rows.Scan(
 			&i.NoteID,
+			&i.NoteName,
+			&i.NoteDescription,
 			&i.NoteTypeID,
 			&i.NoteTypeName,
 			&i.NoteFieldID,
@@ -79,11 +106,21 @@ func (q *Queries) CardDetailsByDeck(ctx context.Context, id string) ([]CardDetai
 			&i.DeckID,
 			&i.DeckName,
 			&i.DeckDescription,
+			&i.OwnerID,
 			&i.DueDate,
 			&i.CardID,
+			&i.Stability,
+			&i.Difficulty,
+			&i.Interval,
+			&i.Status,
+			&i.Reps,
+			&i.Lapses,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.TemplateName,
 			&i.FrontHtml,
 			&i.BackHtml,
+			&i.Css,
 		); err != nil {
 			return nil, err
 		}
@@ -184,6 +221,60 @@ func (q *Queries) GetCard(ctx context.Context, id string) (Card, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listCardsByDeck = `-- name: ListCardsByDeck :many
+SELECT c.id,
+       c.note_id,
+       c.card_template_id,
+       c.due_date,
+       c.stability,
+       c.difficulty,
+       c.interval,
+       c.status,
+       c.reps,
+       c.lapses,
+       c.created_at,
+       c.updated_at
+FROM card AS c
+JOIN note AS n ON c.note_id = n.id
+WHERE n.deck_id = ?
+`
+
+func (q *Queries) ListCardsByDeck(ctx context.Context, deckID string) ([]Card, error) {
+	rows, err := q.db.QueryContext(ctx, listCardsByDeck, deckID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Card
+	for rows.Next() {
+		var i Card
+		if err := rows.Scan(
+			&i.ID,
+			&i.NoteID,
+			&i.CardTemplateID,
+			&i.DueDate,
+			&i.Stability,
+			&i.Difficulty,
+			&i.Interval,
+			&i.Status,
+			&i.Reps,
+			&i.Lapses,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listCardsByNote = `-- name: ListCardsByNote :many

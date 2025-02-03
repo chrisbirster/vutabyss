@@ -3,7 +3,6 @@ import { CardDetails } from "@/types";
 import { For } from "solid-js";
 import { NoteCard } from "@/components/NoteCard";
 import { CreateNoteCard } from "./CreateNoteCard";
-import { useParams } from "@solidjs/router";
 
 const cardList = css`
   display: flex;
@@ -18,21 +17,18 @@ const cardList = css`
 type NoteCardListProps = {
   cards?: CardDetails[];
   selectedCard?: CardDetails;
-  onSelectedCard: (note_id: number) => void;
+  onSelectedCard: (card_id: string) => void;
 };
 
 export const NoteCardList = (props: NoteCardListProps) => {
-  const params = useParams();
-  console.log("params: ", params.decksID);
-
   return (
     <div class={cardList}>
       <CreateNoteCard />
       <For each={props.cards}>
         {(card) => (
           <NoteCard
-            note={card}
-            selectedCard={card.note_id === props.selectedCard?.note_id}
+            card={card}
+            selectedCard={card.card_id === props.selectedCard?.card_id}
             onSelectCard={props.onSelectedCard}
           />
         )}

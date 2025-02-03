@@ -1,6 +1,6 @@
 import { css } from "@linaria/core";
 import { CardDetails } from "@/types";
-import { createSignal, Match, Show, Switch } from "solid-js";
+import { createSignal, For, Match, Show, Switch } from "solid-js";
 import { NoteCardTabViewContent } from "./NoteCardTabViewContent";
 import { NoteCardTabViewButton } from "./NoteCardTabViewButton";
 
@@ -15,6 +15,12 @@ const tabs = css`
   display: flex;
   gap: 16px;
   margin-bottom: 24px;
+`;
+
+const row = css`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
 `;
 
 type NoteCardTabViewProps = {
@@ -42,6 +48,16 @@ export const NoteCardTabView = (props: NoteCardTabViewProps) => {
         </div>
         <Switch fallback={<div>Please select a card</div>}>
           <Match when={isFront()}>
+            <For each={Object.entries(props.card)}>
+              {([key, value]) => {
+                return (
+                  <div class={row}>
+                    <p>{key}</p>
+                    <p>{value}</p>
+                  </div>
+                );
+              }}
+            </For>
             <NoteCardTabViewContent content={props.card?.front_html} />
           </Match>
           <Match when={!isFront()}>
