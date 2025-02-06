@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -229,7 +230,7 @@ func FuncCreateTemplateHandler(app *app.App) echo.HandlerFunc {
 		}
 
 		// Execute the template
-		templates, err := executeTemplate(tmpl, data)
+		templates, err := executeTemplate(tmpl, req.TemplateName, data)
 		if err != nil {
 			logging.SlogLogger.Error("Template execution error", "error", err)
 			return c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -237,13 +238,15 @@ func FuncCreateTemplateHandler(app *app.App) echo.HandlerFunc {
 			})
 		}
 
+		logging.SlogLogger.Info("Templates saved", "templates", templates)
+
 		noteType, err := app.Queries.CreateNoteType(c.Request().Context(), database.CreateNoteTypeParams{
 			Name:        req.TemplateName,
 			Description: sql.NullString{String: req.TemplateDescription, Valid: true},
 			OwnerID:     user.ID,
 		})
 
-		cardTemplate, err := app.Queries.CreateCardTemplate(c.Request().Context(), database.CreateCardTemplateParams{
+		_, err = app.Queries.CreateCardTemplate(c.Request().Context(), database.CreateCardTemplateParams{
 			NoteTypeID:   noteType.ID,
 			TemplateName: req.TemplateName,
 			FrontHtml:    data.Front,

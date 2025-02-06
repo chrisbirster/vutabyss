@@ -75,11 +75,8 @@ const inputField = css`
 `;
 
 const inputErrorStyle = css`
-  position: relative;
+  background-color: red;
   color: red;
-  font-size: 12px;
-  margin-top: 4px;
-  z-index: 10;
 `;
 
 const grabHandle = css`
@@ -115,15 +112,13 @@ export const Field = (props: { field: TField, setFields: Setter<TField[]> }) => 
   const [state, setState] = createSignal<FieldState>(idle);
   const [showAdvancedSettings, setShowAdvancedSettings] = createSignal(false);
   const [localName, setLocalName] = createSignal(props.field.name);
-  const [inputError, setInputError] = createSignal("");
 
   // Sync local state with global state on blur
   const handleBlur = (e: Event) => {
+    // TODO: this is not being triggered
     const input = e.currentTarget as HTMLInputElement;
     if (!input.validity.valid) {
-      setInputError(input.validationMessage);
-    } else {
-      setInputError("");
+      input.classList.add(inputErrorStyle)
     }
 
     props.setFields((prevFields) =>
@@ -237,13 +232,6 @@ export const Field = (props: { field: TField, setFields: Setter<TField[]> }) => 
             <div>Advanced Option 3</div>
           </div>
         </Show>
-
-        <Show when={inputError()}>
-          <div class={inputErrorStyle}>
-            {inputError()}
-          </div>
-        </Show>
-
         <Show when={state().type === 'is-dragging-over' && state().closestEdge} fallback={null}>
           <DropIndicator edge={state().closestEdge!} gap={'8px'} />
         </Show>

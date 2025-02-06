@@ -1,4 +1,4 @@
-import { createSignal, For, createEffect, onMount, onCleanup } from "solid-js";
+import { createSignal, For, createEffect, onMount, onCleanup, Show } from "solid-js";
 import { css } from "@linaria/core";
 import { NewTemplateAddFieldButton } from "@/components/new-template-add-field-button";
 import { NewTemplateFooter } from "@/components/new-template-footer";
@@ -47,7 +47,22 @@ const inputField = css`
   padding: 5px 10px;
   border: 1px solid #ccc;
   font-size: 16px;
+
+  &.dirty:invalid {
+    border-color: red;
+    background-color: #ffe6e6;
+  }
 `;
+
+const inputErrorStyle = css`
+  position: relative;
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+  z-index: 10;
+`;
+
+type InputError = { id: string, name: string, error: string }
 
 export default function NewTemplate() {
   let formRef!: HTMLFormElement;
@@ -61,6 +76,29 @@ export default function NewTemplate() {
     gearMenuOpen: false,
   };
   const [fields, setFields] = createSignal<TField[]>([originField]);
+  const [fieldError, setFieldError] = createSignal<InputError[]>([]);
+  const [nameError, setNameError] = createSignal("");
+  const [isTouched, setIsTouched] = createSignal(false);
+
+  function showError(input: HTMLInputElement) {
+    if (input.validity.valueMissing) {
+      setNameError("(*) You need to enter a deck name.");
+    } else if (input.validity.patternMismatch) {
+      setNameError("(*) Deck name must contain at least one letter.");
+    } else {
+      setNameError("(*) Invalid input.");
+    }
+  }
+
+  const handleInput = async (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    setIsTouched(true);
+    if (input.validity.valid) {
+      setNameError("");
+    } else {
+      showError(input)
+    }
+  };
 
   createEffect(() => {
     return monitorForElements({
@@ -127,30 +165,25 @@ export default function NewTemplate() {
    * for the name field, and provides a general message to prompt the user to fix errors.
    */
   const handleSubmit = (event: SubmitEvent) => {
-    event.preventDefault(); // Prevent default submission for debugging
     // Check validity of the form
+    setIsTouched(true)
     const formValid = formRef.checkValidity();
     console.log("Form valid: ", formValid);
     console.log("Event: ", event);
     console.log("Fields state: ", fields());
     if (!formValid) {
+      event.preventDefault();
       // Find invalid fields and log them
-      const invalidFields = Array.from(formRef.elements).filter((el) => {
-        return el instanceof HTMLInputElement && !el.validity.valid;
-      });
-
-      console.log("Invalid fields: ", invalidFields);
-
-      // Log specific validation messages
-      invalidFields.forEach((field) => {
-        if (field instanceof HTMLInputElement) {
-          console.error(`Field ID: ${field.id}, Name: ${field.name}, Error: ${field.validationMessage}`);
+      let ie: InputError[] = [];
+      const invalidFields = Array.from(formRef.elements).forEach((el) => {
+        if (el instanceof HTMLInputElement && !el.validity.valid) {
+          ie.push({ id: el.id, name: el.name, error: el.validationMessage })
         }
       });
-    }
 
-    // Proceed with existing form submission logic if valid
-    // createTemplate(new FormData(formRef));
+      setFieldError(ie)
+      console.log("Invalid fields: ", invalidFields);
+    }
   };
 
   onMount(() => {
@@ -159,6 +192,30 @@ export default function NewTemplate() {
       formRef.removeEventListener("submit", handleSubmit);
     });
   });
+
+  function handleBlur(e: FocusEvent) {
+    const input = e.currentTarget as HTMLInputElement;
+    const name = input.name;
+    const errorMessage = input.validity.valid ? "" : input.validationMessage;
+    setFieldError((prev) => {
+      const updated = [...prev];
+      const idx = updated.findIndex((e) => e.name === name);
+
+      // If we have an error, either add or update existing
+      if (errorMessage) {
+        if (idx === -1) {
+          updated.push({ id: input.id, name, error: errorMessage });
+        } else {
+          updated[idx] = { ...updated[idx], error: errorMessage };
+        }
+      } else {
+        if (idx !== -1) {
+          updated.splice(idx, 1);
+        }
+      }
+      return updated;
+    });
+  }
 
   return (
     <div class={page}>
@@ -174,18 +231,31 @@ export default function NewTemplate() {
               required
               spellcheck={false}
               placeholder="Template name"
+              onInput={handleInput}
+              classList={{ dirty: isTouched() }}
+              onBlur={() => setIsTouched(true)}
             />
+            <Show when={nameError}>
+              <span class={inputErrorStyle}>{nameError()}</span>
+            </Show>
             <label for="templateDescription">Template Description</label>
             <input
               name="templateDescription"
               class={inputField}
               spellcheck={false}
-              placeholder="this"
+              placeholder="(Optional) A description about this template"
             />
             <h3>Template Fields</h3>
-            <For each={fields()}>{(field) => <Field field={field} setFields={setFields} />}</For>
+            <For each={fields()}>
+              {(field) => <Field field={field} setFields={setFields} />}
+            </For>
+            <Show when={fieldError()}>
+              <For each={fieldError()}>
+                {(err) => <p class={inputErrorStyle}>{err.name}: {err.error}</p>}
+              </For>
+            </Show>
             <NewTemplateAddFieldButton onSelect={handleAddField} />
-            <NewTemplateFooter onSave={handleSubmit} />
+            <NewTemplateFooter onSubmit={handleSubmit} />
           </form>
         </div>
       </div>

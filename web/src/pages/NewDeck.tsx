@@ -149,7 +149,9 @@ export default function NewDeck() {
             onInput={handleInput}
             onBlur={() => setIsTouched(true)}
           />
-          <span class={spanError}>{nameError()}</span>
+          <Show when={spanError}>
+            <span class={spanError}>{nameError()}</span>
+          </Show>
           <p>This is the name for your group of flashcards</p>
 
           {/* Description Field */}

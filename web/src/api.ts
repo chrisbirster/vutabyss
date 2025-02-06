@@ -141,6 +141,8 @@ export const getTemplateByID = async (templateID: string) => {
 
 export const createTemplate = action(async (fd: FormData) => {
   // TODO: get generated template from submission
+  console.log(">>>>>>>createTemplate called<<<<<<")
+
   const templateName = String(fd.get("templateName"))
   const templateDescription = String(fd.get("templateDescription"))
 
@@ -154,5 +156,5 @@ export const createTemplate = action(async (fd: FormData) => {
       });
     }
   }
-  console.log("createTemplate data: ", { templateName, templateDescription })
+  console.log("createTemplate data: ", { templateName, templateDescription, dynamicFields })
 });

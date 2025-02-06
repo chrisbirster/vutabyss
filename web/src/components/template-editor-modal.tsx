@@ -77,8 +77,8 @@ const saveButtonStyle = css`
 
 export interface TemplateEditorModalProps {
   initialTemplate: string;
-  onSave: (e: SubmitEvent) => void;
   onCancel: () => void;
+  onSubmit?: (e: SubmitEvent) => void;
 }
 
 export function TemplateEditorModal(props: TemplateEditorModalProps) {
@@ -90,8 +90,8 @@ export function TemplateEditorModal(props: TemplateEditorModalProps) {
     });
   })
 
-  function handleSave(e: SubmitEvent) {
-    props.onSave(e);
+  const handleSave = (e: any) => {
+    console.log("inside template editor: ", e);
   }
 
   return (
@@ -101,20 +101,22 @@ export function TemplateEditorModal(props: TemplateEditorModalProps) {
       {/* Modal content */}
       <div class={modalStyle}>
         <div class={headerStyle}>Edit Template</div>
-        <textarea
-          id="editor"
-          class={textareaStyle}
-          value={templateContent()}
-          onInput={(e) => setTemplateContent(e.currentTarget.value)}
-        />
-        <div class={footerStyle}>
-          <button class={cx(buttonStyle, cancelButtonStyle)} onClick={props.onCancel}>
-            Cancel
-          </button>
-          <button type="submit" class={cx(buttonStyle, saveButtonStyle)} onClick={(e) => handleSave(e)}>
-            Save
-          </button>
-        </div>
+        <form>
+          <textarea
+            id="editor"
+            class={textareaStyle}
+            value={templateContent()}
+            onInput={(e) => setTemplateContent(e.currentTarget.value)}
+          />
+          <div class={footerStyle}>
+            <button type="button" class={cx(buttonStyle, cancelButtonStyle)}>
+              Cancel
+            </button>
+            <button type="button" class={cx(buttonStyle, saveButtonStyle)} onClick={handleSave}>
+              Save
+            </button>
+          </div>
+        </form>
       </div>
     </Portal>
   );

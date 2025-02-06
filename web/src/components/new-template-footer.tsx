@@ -28,11 +28,22 @@ const saveButtonStyle = css`
   border-radius: 4px;
 `;
 
-export const NewTemplateFooter = (props: { onSave: (e: SubmitEvent) => void }) => {
+type NewTempelateFooterProps = {
+  onSubmit: (e: SubmitEvent) => void;
+}
+
+export const NewTemplateFooter = (props: NewTempelateFooterProps) => {
   const submission = useSubmission(createTemplate);
   const navigate = useNavigate();
   const [showModal, setShowModal] = createSignal(false);
-  const initialTemplateText = `{{/* Front of the card */}}
+  const initialTemplateText = `
+{{/* Reverse Template */}}
+{{define "ReverseTemplate"}}
+{{reverse "templateName"}}
+{{block "CardFront"}}
+{{block "CardBack"}}
+{{end}}
+
 {{define "CardFront"}}
   <div>
     <h1>{{.name}}</h1>
@@ -49,11 +60,6 @@ export const NewTemplateFooter = (props: { onSave: (e: SubmitEvent) => void }) =
   </div>
 {{end}}`;
 
-  function onSave() {
-
-    props.onSave()
-  }
-
   function onCancel() {
     navigate("/app/templates");
   }
@@ -65,21 +71,20 @@ export const NewTemplateFooter = (props: { onSave: (e: SubmitEvent) => void }) =
   return (
     <>
       <div class={footerStyle}>
-        <button class={cancelButtonStyle} onClick={onCancel}>
+        <button type="button" class={cancelButtonStyle} onClick={onCancel}>
           Cancel
         </button>
-        <button class={cancelButtonStyle} onClick={onEdit}>
+        <button type="button" class={cancelButtonStyle} onClick={onEdit}>
           Edit Template
         </button>
         <button class={saveButtonStyle} type="submit" disabled={submission.pending}>
           {submission.pending ? "Creating Templates..." : "Create Template"}
         </button>
       </div>
-      <Show when={showModal()} fallback={null}>
+      <Show when={showModal()}>
         <Show when={showModal()}>
           <TemplateEditorModal
             initialTemplate={initialTemplateText}
-            onSave={props.onSave}
             onCancel={() => setShowModal(false)}
           />
         </Show>
