@@ -1,6 +1,8 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { css, cx } from "@linaria/core";
 import { Portal } from "solid-js/web";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 
 const backdropStyle = css`
   position: fixed;
@@ -75,15 +77,21 @@ const saveButtonStyle = css`
 
 export interface TemplateEditorModalProps {
   initialTemplate: string;
-  onSave: (template: string) => void;
+  onSave: (e: SubmitEvent) => void;
   onCancel: () => void;
 }
 
 export function TemplateEditorModal(props: TemplateEditorModalProps) {
   const [templateContent, setTemplateContent] = createSignal(props.initialTemplate);
 
-  function handleSave() {
-    props.onSave(templateContent());
+  onMount(() => {
+    new Quill('#editor', {
+      theme: 'snow'
+    });
+  })
+
+  function handleSave(e: SubmitEvent) {
+    props.onSave(e);
   }
 
   return (
@@ -94,6 +102,7 @@ export function TemplateEditorModal(props: TemplateEditorModalProps) {
       <div class={modalStyle}>
         <div class={headerStyle}>Edit Template</div>
         <textarea
+          id="editor"
           class={textareaStyle}
           value={templateContent()}
           onInput={(e) => setTemplateContent(e.currentTarget.value)}
@@ -102,7 +111,7 @@ export function TemplateEditorModal(props: TemplateEditorModalProps) {
           <button class={cx(buttonStyle, cancelButtonStyle)} onClick={props.onCancel}>
             Cancel
           </button>
-          <button class={cx(buttonStyle, saveButtonStyle)} onClick={handleSave}>
+          <button type="submit" class={cx(buttonStyle, saveButtonStyle)} onClick={(e) => handleSave(e)}>
             Save
           </button>
         </div>

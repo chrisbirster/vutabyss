@@ -22,7 +22,7 @@ type NewTemplateFieldButtonProps = {
   onSelect: (ft: FieldType) => void;
 }
 
-export const NewTemplateFieldButton = (props: NewTemplateFieldButtonProps) => {
+export const NewTemplateAddFieldButton = (props: NewTemplateFieldButtonProps) => {
   const [showFieldMenu, setShowFieldMenu] = createSignal(false);
 
   const handleSelect = (ft: any) => {
@@ -32,6 +32,7 @@ export const NewTemplateFieldButton = (props: NewTemplateFieldButtonProps) => {
   return (
     <div class={buttonRow}>
       <button
+        type="button"
         onClick={() => setShowFieldMenu(!showFieldMenu())}
         class={newFieldButton}
       >

@@ -28,7 +28,7 @@ const saveButtonStyle = css`
   border-radius: 4px;
 `;
 
-export const NewTemplateFooter = (props: { onSave: () => void }) => {
+export const NewTemplateFooter = (props: { onSave: (e: SubmitEvent) => void }) => {
   const submission = useSubmission(createTemplate);
   const navigate = useNavigate();
   const [showModal, setShowModal] = createSignal(false);
@@ -49,6 +49,11 @@ export const NewTemplateFooter = (props: { onSave: () => void }) => {
   </div>
 {{end}}`;
 
+  function onSave() {
+
+    props.onSave()
+  }
+
   function onCancel() {
     navigate("/app/templates");
   }
@@ -68,7 +73,6 @@ export const NewTemplateFooter = (props: { onSave: () => void }) => {
         </button>
         <button class={saveButtonStyle} type="submit" disabled={submission.pending}>
           {submission.pending ? "Creating Templates..." : "Create Template"}
-          Save changes
         </button>
       </div>
       <Show when={showModal()} fallback={null}>

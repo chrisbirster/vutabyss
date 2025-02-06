@@ -11,11 +11,11 @@ import {
 import { pointerOutsideOfPreview } from '@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview';
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview';
 import GripVertical from 'lucide-solid/icons/grip-vertical';
-import { createEffect, createSignal, Show } from 'solid-js';
+import { createEffect, createSignal, Setter, Show } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import invariant from 'tiny-invariant';
 import { DropIndicator } from './drop-indicator';
-import { getFieldData, isFieldData } from './field-data';
+import { getFieldData, getInputProps, isFieldData } from './field-data';
 import { TField, FieldType } from '@/types';
 import { Settings } from 'lucide-solid';
 
@@ -74,6 +74,14 @@ const inputField = css`
   font-size: 16px;
 `;
 
+const inputErrorStyle = css`
+  position: relative;
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+  z-index: 10;
+`;
+
 const grabHandle = css`
   opacity: 0; 
   transition: opacity 0.2s ease-in-out;
@@ -101,18 +109,37 @@ interface FieldState {
 
 const idle: FieldState = { type: 'idle' };
 
-export const Field = (props: { field: TField }) => {
+export const Field = (props: { field: TField, setFields: Setter<TField[]> }) => {
   let ref: HTMLDivElement | undefined = undefined;
+  let grabRef: HTMLDivElement | undefined = undefined;
   const [state, setState] = createSignal<FieldState>(idle);
   const [showAdvancedSettings, setShowAdvancedSettings] = createSignal(false);
+  const [localName, setLocalName] = createSignal(props.field.name);
+  const [inputError, setInputError] = createSignal("");
+
+  // Sync local state with global state on blur
+  const handleBlur = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement;
+    if (!input.validity.valid) {
+      setInputError(input.validationMessage);
+    } else {
+      setInputError("");
+    }
+
+    props.setFields((prevFields) =>
+      prevFields.map((f) => (f.id === props.field.id ? { ...f, name: localName() } : f))
+    );
+  };
 
   createEffect(() => {
     const element = ref;
+    const grabber = grabRef;
     const field = props.field
     invariant(element);
+    invariant(grabber);
 
     draggable({
-      element,
+      element: grabber,
       getInitialData() {
         return getFieldData(field);
       },
@@ -181,15 +208,19 @@ export const Field = (props: { field: TField }) => {
           ref={ref}
           class={cx(fieldContainer, (state().type === 'is-dragging' && draggingStyle))}
         >
-          <div class={cx(iconWrapper, "grabber", grabHandle)}><GripVertical /></div>
+          <div ref={grabRef} class={cx(iconWrapper, "grabber", grabHandle)}><GripVertical /></div>
           <span class={contentWrapper}>{<props.field.type.logo />}</span>
           <input
+            id={`field-${props.field.id}-name`}
+            name={`field-${props.field.id}-name`}
             class={inputField}
-            type="text"
             required
+            {...getInputProps(props.field.type)}
             spellcheck={false}
             placeholder="Field name"
-            value={props.field.name}
+            value={localName()}
+            onInput={(e) => setLocalName(e.currentTarget.value)}
+            onBlur={handleBlur}
           />
           <div class={iconWrapper}
             onClick={() => setShowAdvancedSettings(!showAdvancedSettings())}
@@ -204,6 +235,12 @@ export const Field = (props: { field: TField }) => {
             <div>Advanced Option 1</div>
             <div>Advanced Option 2</div>
             <div>Advanced Option 3</div>
+          </div>
+        </Show>
+
+        <Show when={inputError()}>
+          <div class={inputErrorStyle}>
+            {inputError()}
           </div>
         </Show>
 

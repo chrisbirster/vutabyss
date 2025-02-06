@@ -1,6 +1,6 @@
 import { createSignal, For, createEffect, onMount, onCleanup } from "solid-js";
 import { css } from "@linaria/core";
-import { NewTemplateFieldButton } from "@/components/NewTemplateFieldButton";
+import { NewTemplateAddFieldButton } from "@/components/new-template-add-field-button";
 import { NewTemplateFooter } from "@/components/new-template-footer";
 import { TField, FieldType } from "@/types";
 import { isFieldData, fieldTypes } from "@/components/field-data";
@@ -9,6 +9,7 @@ import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/clo
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Field } from "@/components/field";
+import { createTemplate } from "@/api";
 
 const page = css`
   display: flex;
@@ -37,6 +38,15 @@ const containerStyle = css`
 
 const fieldsContainerStyle = css`
   margin-bottom: 16px;
+`;
+
+const inputField = css`
+  width: 100%;
+  margin: 0 10px;
+  border-radius: 8px;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
 `;
 
 export default function NewTemplate() {
@@ -98,8 +108,6 @@ export default function NewTemplate() {
 
   function handleAddField(ft: FieldType) {
     const newId = ++nextId;
-    console.log("newestId added: ", newId);
-    console.log("newestId ft: ", ft);
     setFields((old) => [
       ...old,
       {
@@ -109,6 +117,8 @@ export default function NewTemplate() {
         gearMenuOpen: false,
       },
     ]);
+    const newestFieldInput = formRef.elements.namedItem(`field-${nextId}-name`) as HTMLInputElement
+    newestFieldInput.focus();
   }
 
   /**
@@ -117,10 +127,30 @@ export default function NewTemplate() {
    * for the name field, and provides a general message to prompt the user to fix errors.
    */
   const handleSubmit = (event: SubmitEvent) => {
-    // if the form is invalid cancel submission and show errors
-    if (!formRef.checkValidity()) {
-      event.preventDefault();
+    event.preventDefault(); // Prevent default submission for debugging
+    // Check validity of the form
+    const formValid = formRef.checkValidity();
+    console.log("Form valid: ", formValid);
+    console.log("Event: ", event);
+    console.log("Fields state: ", fields());
+    if (!formValid) {
+      // Find invalid fields and log them
+      const invalidFields = Array.from(formRef.elements).filter((el) => {
+        return el instanceof HTMLInputElement && !el.validity.valid;
+      });
+
+      console.log("Invalid fields: ", invalidFields);
+
+      // Log specific validation messages
+      invalidFields.forEach((field) => {
+        if (field instanceof HTMLInputElement) {
+          console.error(`Field ID: ${field.id}, Name: ${field.name}, Error: ${field.validationMessage}`);
+        }
+      });
     }
+
+    // Proceed with existing form submission logic if valid
+    // createTemplate(new FormData(formRef));
   };
 
   onMount(() => {
@@ -135,9 +165,26 @@ export default function NewTemplate() {
       <h2 class={headerStyle}>New Template</h2>
       <div class={containerStyle}>
         <div class={fieldsContainerStyle}>
-          <form method="post" action={createTemplate}>
-            <For each={fields()}>{(field) => <Field field={field} />}</For>
-            <NewTemplateFieldButton onSelect={handleAddField} />
+          <form ref={formRef} method="post" action={createTemplate} noValidate>
+            <h3>Template Details</h3>
+            <label for="templateName">Name of your template</label>
+            <input
+              name="templateName"
+              class={inputField}
+              required
+              spellcheck={false}
+              placeholder="Template name"
+            />
+            <label for="templateDescription">Template Description</label>
+            <input
+              name="templateDescription"
+              class={inputField}
+              spellcheck={false}
+              placeholder="this"
+            />
+            <h3>Template Fields</h3>
+            <For each={fields()}>{(field) => <Field field={field} setFields={setFields} />}</For>
+            <NewTemplateAddFieldButton onSelect={handleAddField} />
             <NewTemplateFooter onSave={handleSubmit} />
           </form>
         </div>

@@ -45,7 +45,12 @@ export const FieldTypeMenu = (props: FieldTypeMenuProps) => {
     <div class={fieldMenuStyle}>
       <For each={fieldTypes}>
         {(field) => (
-          <div class={menuItemStyle} onClick={() => props.onSelect(field)}>
+          <div
+            class={menuItemStyle}
+            onClick={() => {
+              props.onSelect(field)
+            }}
+          >
             <span>{<field.logo />}</span>
             <span>{field.label}</span>
           </div>

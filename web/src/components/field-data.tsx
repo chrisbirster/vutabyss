@@ -10,21 +10,42 @@ import {
   Link
 } from "lucide-solid";
 
-import { Field } from "@/types";
+import { TField } from "@/types";
 
 const fieldDataKey = Symbol('field');
 
 export type TFieldData = {
   [fieldDataKey]: true;
-  fieldId: Field['id'];
+  fieldId: TField['id'];
 };
 
-export function getFieldData(field: Field): TFieldData {
+export function getFieldData(field: TField): TFieldData {
   return { [fieldDataKey]: true, fieldId: field.id };
 }
 
 export function isFieldData(data: Record<string | symbol, unknown>): data is TFieldData {
   return data[fieldDataKey] === true;
+}
+
+export const getInputProps = (fieldType: FieldType) => {
+  switch (fieldType.id) {
+    case "field-type-1": // Number
+      return { type: "number", step: "any", pattern: "[0-9]+" };
+    case "field-type-2": // Boolean (checkbox)
+      return { type: "checkbox" };
+    case "field-type-3": // Email
+      return { type: "email", pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" };
+    case "field-type-4": // URL
+      return { type: "url", pattern: "https?://.+" };
+    case "field-type-5": // DateTime
+      return { type: "datetime-local" };
+    case "field-type-6": // File Upload
+      return { type: "file" };
+    case "field-type-7": // JSON
+      return { type: "text", pattern: "\\{.*\\}" }; // Simple regex for JSON
+    default: // Default to plain text
+      return { type: "text" };
+  }
 }
 
 export const fieldTypes: FieldType[] = [
