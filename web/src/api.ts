@@ -11,6 +11,7 @@ export const routes = {
   apiTemplateByID: "/api/templates/:templateID",
   apiCardsByDeck: "/api/decks/:deckID/cards",
   appCreateNewCards: "/app/decks/:deckID/cards/new",
+  appTemplates: "/app/templates",
 }
 
 const getFetch = async (url: string) => {
@@ -140,21 +141,35 @@ export const getTemplateByID = async (templateID: string) => {
 }
 
 export const createTemplate = action(async (fd: FormData) => {
-  // TODO: get generated template from submission
-  console.log(">>>>>>>createTemplate called<<<<<<")
+  try {
+    // get form values
+    const name = String(fd.get("templateName"))
+    const description = String(fd.get("templateDescription"))
+    const template = String(fd.get("cardTemplate"));
 
-  const templateName = String(fd.get("templateName"))
-  const templateDescription = String(fd.get("templateDescription"))
-
-  // dynamic field data, pattern [field-<id>-name]
-  const dynamicFields: { key: string; name: string }[] = [];
-  for (const [key, value] of fd.entries()) {
-    if (key.startsWith("field-") && key.endsWith("-name")) {
-      dynamicFields.push({
-        key,
-        name: String(value),
-      });
+    // dynamic field data pattern [field-<id>-name]
+    const fields: { key: string; name: string }[] = [];
+    for (const [key, value] of fd.entries()) {
+      if (key.startsWith("field-") && key.endsWith("-name")) {
+        fields.push({
+          key,
+          name: String(value),
+        });
+      }
     }
+    console.log("createTemplate data: ", { name, description, template, fields })
+
+    // send request
+    const data = JSON.stringify({ name, description, template, fields });
+    const response = await postFetch(routes.apiTemplates, data);
+    if (response.template_id) {
+      return redirect(routes.appTemplates);
+    } else {
+      return new Error("Invalid response from server");
+    }
+  } catch (error) {
+    return new Error(`Error creating template: ${error}`);
   }
-  console.log("createTemplate data: ", { templateName, templateDescription, dynamicFields })
+
+
 });

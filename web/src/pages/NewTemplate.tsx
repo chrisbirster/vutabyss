@@ -62,6 +62,33 @@ const inputErrorStyle = css`
   z-index: 10;
 `;
 
+const initialTemplateText = `
+{{define "Example"}}
+<h1>{{.TemplateName}}</h1>
+  {{block "CardFront" .}}{{end}}
+  {{block "CardBack" .}}{{end}}
+{{end}}
+
+{{define "CardFront"}}
+  <div>
+    <h1>Question:</h1>
+    {{range .Fields}}
+      <p>{{.Name}}</p>
+    {{end}}
+  </div>
+{{end}}
+
+{{define "CardBack"}}
+  <div>
+    <h1>Answer:</h1>
+    {{range .Fields}}
+      <p>{{.Name}}</p>
+    {{end}}
+  </div>
+{{end}}
+`;
+
+
 type InputError = { id: string, name: string, error: string }
 
 export default function NewTemplate() {
@@ -79,6 +106,7 @@ export default function NewTemplate() {
   const [fieldError, setFieldError] = createSignal<InputError[]>([]);
   const [nameError, setNameError] = createSignal("");
   const [isTouched, setIsTouched] = createSignal(false);
+  const [cardTemplate, setCardTemplate] = createSignal(initialTemplateText);
 
   function showError(input: HTMLInputElement) {
     if (input.validity.valueMissing) {
@@ -193,30 +221,6 @@ export default function NewTemplate() {
     });
   });
 
-  function handleBlur(e: FocusEvent) {
-    const input = e.currentTarget as HTMLInputElement;
-    const name = input.name;
-    const errorMessage = input.validity.valid ? "" : input.validationMessage;
-    setFieldError((prev) => {
-      const updated = [...prev];
-      const idx = updated.findIndex((e) => e.name === name);
-
-      // If we have an error, either add or update existing
-      if (errorMessage) {
-        if (idx === -1) {
-          updated.push({ id: input.id, name, error: errorMessage });
-        } else {
-          updated[idx] = { ...updated[idx], error: errorMessage };
-        }
-      } else {
-        if (idx !== -1) {
-          updated.splice(idx, 1);
-        }
-      }
-      return updated;
-    });
-  }
-
   return (
     <div class={page}>
       <h2 class={headerStyle}>New Template</h2>
@@ -245,6 +249,7 @@ export default function NewTemplate() {
               spellcheck={false}
               placeholder="(Optional) A description about this template"
             />
+            <input type="hidden" name="cardTemplate" value={cardTemplate()} />
             <h3>Template Fields</h3>
             <For each={fields()}>
               {(field) => <Field field={field} setFields={setFields} />}
@@ -255,7 +260,7 @@ export default function NewTemplate() {
               </For>
             </Show>
             <NewTemplateAddFieldButton onSelect={handleAddField} />
-            <NewTemplateFooter onSubmit={handleSubmit} />
+            <NewTemplateFooter template={cardTemplate} onEdit={setCardTemplate} />
           </form>
         </div>
       </div>

@@ -1,9 +1,7 @@
 package server
 
 import (
-	"bytes"
 	"database/sql"
-	"fmt"
 	"html/template"
 	"net/http"
 	"time"
@@ -121,11 +119,15 @@ func FuncGetTemplateHandler(app *app.App) echo.HandlerFunc {
 	}
 }
 
-// TemplateData represents the data passed to the template
-type TemplateData struct {
-	Front string
-	Back  string
+type Field struct {
+	Name string
 }
+
+// type TemplateData struct {
+// 	Name        string
+// 	Description string
+// 	Fields      []Field
+// }
 
 // UserFunction represents a function sent from the frontend
 type UserFunction struct {
@@ -134,57 +136,17 @@ type UserFunction struct {
 	Body       string `json:"body"`
 }
 
-// parseCustomFunctions securely registers functions for Go templates
-func parseCustomFunctions(userFuncs []UserFunction) (template.FuncMap, error) {
-	funcMap := template.FuncMap{}
-
-	for _, fn := range userFuncs {
-		switch fn.OutputType {
-		case "boolean":
-			// Secure evaluation: Only predefined safe logic
-			if fn.Body == "return true;" {
-				funcMap[fn.Name] = func() bool { return true }
-			} else if fn.Body == "return false;" {
-				funcMap[fn.Name] = func() bool { return false }
-			} else {
-				return nil, fmt.Errorf("Invalid function body")
-			}
-		default:
-			return nil, fmt.Errorf("Unsupported function output type")
-		}
-	}
-
-	return funcMap, nil
-}
-
-// Execute the provided Go template and extract generated flashcards
-func executeTemplate(tmpl *template.Template, templateName string, data TemplateData) ([]string, error) {
-	var output bytes.Buffer
-	err := tmpl.ExecuteTemplate(&output, templateName, data)
-	if err != nil {
-		return nil, err
-	}
-
-	// Split output into multiple cards based on div tags
-	// Assumes that each card is wrapped in <div></div>
-	templates := []string{}
-	content := bytes.Split(output.Bytes(), []byte("<div>"))
-	for _, rawCard := range content {
-		if len(rawCard) > 0 {
-			templates = append(templates, "<div>"+string(rawCard))
-		}
-	}
-
-	return templates, nil
-}
-
 type NewTemplateRequest struct {
-	TemplateName        string         `json:"template_name"`
-	TemplateDescription string         `json:"template_description"`
-	TemplateText        string         `json:"template_text"`
-	CustomFunctions     []UserFunction `json:"custom_functions"`
-	Front               string         `json:"front"`
-	Back                string         `json:"back"`
+	Name        string `json:"name"`
+	Description string `json:"escription"`
+	Content     string `json:"template"`
+	// CustomFunctions     []UserFunction `json:"custom_functions"`
+	Fields []Field `json:"fields"`
+}
+
+type CreateTemplateResponse struct {
+	Message    string `json:"message"`
+	TemplateID string `json:"template_id"`
 }
 
 // CreateTemplateHandler handles template creation
@@ -207,16 +169,20 @@ func FuncCreateTemplateHandler(app *app.App) echo.HandlerFunc {
 			})
 		}
 
-		// Parse and register user-defined functions
-		funcMap, err := parseCustomFunctions(req.CustomFunctions)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error: "Failed to register functions",
-			})
-		}
+		// // Parse and register user-defined functions
+		// funcMap, err := parseCustomFunctions(req.CustomFunctions)
+		// if err != nil {
+		// 	return c.JSON(http.StatusInternalServerError, ErrorResponse{
+		// 		Error: "Failed to register functions",
+		// 	})
+		// }
 
 		// Register functions and parse template
-		tmpl, err := template.New("cardTemplate").Funcs(funcMap).Parse(req.TemplateText)
+		// tmpl, err := template.New("cardTemplate").Funcs(funcMap).Parse(req.TemplateText)
+
+		logging.SlogLogger.Info("Template content", "template", req.Content)
+
+		tmpl, err := template.New("cardTemplate").Parse(req.Content)
 		if err != nil {
 			logging.SlogLogger.Error("Template parsing error", "error", err)
 			return c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -224,42 +190,74 @@ func FuncCreateTemplateHandler(app *app.App) echo.HandlerFunc {
 			})
 		}
 
-		data := TemplateData{
-			Front: req.Front,
-			Back:  req.Back,
-		}
-
-		// Execute the template
-		templates, err := executeTemplate(tmpl, req.TemplateName, data)
-		if err != nil {
-			logging.SlogLogger.Error("Template execution error", "error", err)
-			return c.JSON(http.StatusInternalServerError, ErrorResponse{
-				Error: "Failed to render template",
-			})
-		}
-
-		logging.SlogLogger.Info("Templates saved", "templates", templates)
+		logging.SlogLogger.Info("Templates saved", "templates", tmpl)
 
 		noteType, err := app.Queries.CreateNoteType(c.Request().Context(), database.CreateNoteTypeParams{
-			Name:        req.TemplateName,
-			Description: sql.NullString{String: req.TemplateDescription, Valid: true},
+			Name:        req.Name,
+			Description: sql.NullString{String: req.Description, Valid: true},
 			OwnerID:     user.ID,
 		})
 
-		_, err = app.Queries.CreateCardTemplate(c.Request().Context(), database.CreateCardTemplateParams{
+		cardTemplate, err := app.Queries.CreateCardTemplate(c.Request().Context(), database.CreateCardTemplateParams{
 			NoteTypeID:   noteType.ID,
-			TemplateName: req.TemplateName,
-			FrontHtml:    data.Front,
-			BackHtml:     data.Back,
-			Css:          sql.NullString{String: "none", Valid: false},
+			TemplateName: req.Name,
+			FrontHtml:    req.Fields[0].Name,
+			BackHtml:     req.Fields[1].Name,
+			Css:          sql.NullString{},
 			OwnerID:      user.ID,
 		})
 
-		return c.JSON(http.StatusCreated, ErrorResponse{
-			Error: "Templates created successfully",
-		})
+		return c.JSON(http.StatusCreated,
+			CreateTemplateResponse{
+				Message:    "create template is successful",
+				TemplateID: cardTemplate.ID,
+			})
 	}
 }
+
+// // parseCustomFunctions securely registers functions for Go templates
+// func parseCustomFunctions(userFuncs []UserFunction) (template.FuncMap, error) {
+// 	funcMap := template.FuncMap{}
+//
+// 	for _, fn := range userFuncs {
+// 		switch fn.OutputType {
+// 		case "boolean":
+// 			// Secure evaluation: Only predefined safe logic
+// 			if fn.Body == "return true;" {
+// 				funcMap[fn.Name] = func() bool { return true }
+// 			} else if fn.Body == "return false;" {
+// 				funcMap[fn.Name] = func() bool { return false }
+// 			} else {
+// 				return nil, fmt.Errorf("Invalid function body")
+// 			}
+// 		default:
+// 			return nil, fmt.Errorf("Unsupported function output type")
+// 		}
+// 	}
+//
+// 	return funcMap, nil
+// }
+
+// // Execute the provided Go template and extract generated flashcards
+// func executeTemplate(tmpl *template.Template, templateName string, data TemplateData) ([]string, error) {
+// 	var output bytes.Buffer
+// 	err := tmpl.ExecuteTemplate(&output, templateName, data)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	// Split output into multiple cards based on div tags
+// 	// Assumes that each card is wrapped in <div></div>
+// 	templates := []string{}
+// 	content := bytes.Split(output.Bytes(), []byte("<div>"))
+// 	for _, rawCard := range content {
+// 		if len(rawCard) > 0 {
+// 			templates = append(templates, "<div>"+string(rawCard))
+// 		}
+// 	}
+//
+// 	return templates, nil
+// }
 
 // convertTemplatesToResponse converts a slice of database.CardTemplate to a slice of TemplateResponse.
 func convertTemplatesToResponse(templates []database.CardTemplate) []TemplateResponse {

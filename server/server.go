@@ -82,6 +82,7 @@ func StartServer(appInstance *app.App, staticFiles embed.FS, config *config.Conf
 	api.GET("/teams", FuncUserTeams(appInstance))
 	api.GET("/templates", FuncGetTemplatesHandler(appInstance))
 	api.GET("/templates/:templateID", FuncGetTemplateHandler(appInstance))
+	api.POST("/templates", FuncCreateTemplateHandler(appInstance))
 	api.POST("/teams", FuncCreateTeam(appInstance))
 
 	// start app
